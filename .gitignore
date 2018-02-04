@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+# this particular executable should not be included
+game
