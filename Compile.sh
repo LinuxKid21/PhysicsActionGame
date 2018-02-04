@@ -4,4 +4,4 @@ for f in ./*.cpp; do
 done
 
 echo "linking game"
-g++ ./*.o -o game -lsfml-graphics -lsfml-window -lsfml-system
+g++ ./*.o -o game -lsfml-graphics -lsfml-window -lsfml-system -lBox2D
