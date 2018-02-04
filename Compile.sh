@@ -1,4 +1,4 @@
-for f in ./*.cpp; do
+for f in ./Source/*.cpp; do
     echo "building $f"
     g++ -c $f 
 done
