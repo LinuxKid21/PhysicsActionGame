@@ -11,6 +11,7 @@ public:
     //---------------------------------------------------------------------------------------------------- 
     Game() : window(sf::VideoMode(192*3, 180*3), "THE GAME"), world(b2Vec2(0.0f,10.f))
     {
+        window.setView(view);
         onStart();
         while (window.isOpen())
         {
@@ -30,7 +31,10 @@ public:
                 world.Step(timeStep, velocityIterations, positionIterations);
                 update();
             }
+
+            window.clear();
             draw();
+            window.display();
         }
     }
 private:
@@ -50,8 +54,6 @@ private:
         makePlatform(sf::Vector2f(1+width/2.f + 3*(width-thickness),10-.5-height/2.f - height), sf::Vector2f(width, height), thickness);
 
         makePlatform(sf::Vector2f(1+width/2.f + 2*(width-thickness),10-.5-height/2.f - height*2), sf::Vector2f(width, height), thickness);
-
-        window.setView(view);
     }
 
     void update() {
@@ -59,11 +61,9 @@ private:
     }
 
     void draw() {
-        window.clear();
         for(auto &e : rectangleEntities) {
             e.draw(window);
         }
-        window.display();
     }
 
     // handles non-window events
