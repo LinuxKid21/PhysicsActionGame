@@ -1,5 +1,7 @@
 #include "RectangleEntity.h"
 
+#include <iostream>
+#include <vector>
 #include <SFML/Graphics.hpp>
 #include <Box2D/Box2D.h>
 
@@ -7,15 +9,15 @@
 int main()
 {
     sf::RenderWindow window(sf::VideoMode(200, 200), "SFML works!");
-
-    const b2Vec2 gravity(0.0f,10.f);
-    b2World world(gravity);
+    b2World world(b2Vec2(0.0f,10.f));
     
     const float32 timeStep = 1.0f / 60.0f;
     const int32 velocityIterations = 6;
     const int32 positionIterations = 2;
 
-    RectangleEntity e(world);
+    std::vector<RectangleEntity> rectangleEntities;
+    // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
+    rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, true));
 
     sf::Clock clock;
     float timeSinceUpdate = 0;
@@ -28,6 +30,11 @@ int main()
         {
             if (event.type == sf::Event::Closed)
                 window.close();
+            if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
+                for(int i = 0;i < 25; i++)
+                    rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0, false));
+            if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
+                rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45, false));
         }
 
         float delta = clock.restart().asSeconds();
@@ -38,7 +45,9 @@ int main()
         }
             
         window.clear();
-        e.draw(window);
+        for(auto &e : rectangleEntities) {
+            e.draw(window);
+        }
         window.display();
     }
 
