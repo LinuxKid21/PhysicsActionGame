@@ -6,50 +6,106 @@
 #include <Box2D/Box2D.h>
 
 
-int main()
-{
-    sf::RenderWindow window(sf::VideoMode(200, 200), "SFML works!");
-    b2World world(b2Vec2(0.0f,10.f));
-    
-    const float32 timeStep = 1.0f / 60.0f;
-    const int32 velocityIterations = 6;
-    const int32 positionIterations = 2;
-
-    std::vector<RectangleEntity> rectangleEntities;
-    // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
-    rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, true));
-
-    sf::Clock clock;
-    float timeSinceUpdate = 0;
-    sf::View view(sf::FloatRect(0, 0, 19.20, 10.80));
-    window.setView(view);
-    while (window.isOpen())
+class Game {
+public:
+    //---------------------------------------------------------------------------------------------------- 
+    Game() : window(sf::VideoMode(192*3, 180*3), "THE GAME"), world(b2Vec2(0.0f,10.f))
     {
-        sf::Event event;
-        while (window.pollEvent(event))
+        onStart();
+        while (window.isOpen())
         {
-            if (event.type == sf::Event::Closed)
-                window.close();
-            if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
-                for(int i = 0;i < 25; i++)
-                    rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0, false));
-            if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
-                rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45, false));
-        }
+            sf::Event event;
+            while (window.pollEvent(event))
+            {
+                if (event.type == sf::Event::Closed)
+                    window.close();
+                handleGameEvent(event);
+            }
 
-        float delta = clock.restart().asSeconds();
-        timeSinceUpdate += delta;
-        while(timeSinceUpdate >= timeStep) {
-            timeSinceUpdate -= timeStep;
-            world.Step(timeStep, velocityIterations, positionIterations);
+            float delta = clock.restart().asSeconds();
+            timeSinceUpdate += delta;
+
+            while(timeSinceUpdate >= timeStep) {
+                timeSinceUpdate -= timeStep;
+                world.Step(timeStep, velocityIterations, positionIterations);
+                update();
+            }
+            draw();
         }
-            
+    }
+private:
+    //---------------------------------------------------------------------------------------------------- 
+    void onStart() {
+        // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
+        rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, true));
+
+        float width = 2;
+        float height = 2;
+        makePlatform(sf::Vector2f(1+width/2.f,10-.5-height/2.f), sf::Vector2f(width, height), .25);
+
+        window.setView(view);
+    }
+
+    void update() {
+        ;
+    }
+
+    void draw() {
         window.clear();
         for(auto &e : rectangleEntities) {
             e.draw(window);
         }
         window.display();
     }
+
+    // handles non-window events
+    void handleGameEvent(const sf::Event &event) {
+        if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
+            for(int i = 0;i < 25; i++)
+                rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0, false));
+        if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
+            rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45, false));
+    }
+
+    //---------------------------------------------------------------------------------------------------- 
+    void makePlatform(sf::Vector2f pos, sf::Vector2f size, float thickness) {
+        float legHeight = size.y-thickness;
+        rectangleEntities.push_back(RectangleEntity(world,
+                                                    sf::Vector2f(pos.x+size.x/2.f-thickness/2.f, pos.y+thickness/2.f),
+                                                    sf::Vector2f(thickness, legHeight), 0, false));
+
+        rectangleEntities.push_back(RectangleEntity(world,
+                                                    sf::Vector2f(pos.x-size.x/2.f+thickness/2.f, pos.y+thickness/2.f),
+                                                    sf::Vector2f(thickness, legHeight), 0, false));
+
+        rectangleEntities.push_back(RectangleEntity(world,
+                                                    sf::Vector2f(pos.x, pos.y -size.y/2.f+thickness/2.f),
+                                                    sf::Vector2f(size.x, thickness), 0, false));
+    }
+
+
+
+
+
+    //---------------------------------------------------------------------------------------------------- 
+    sf::RenderWindow window;
+    b2World world;
+    
+    const float32 timeStep = 1.0f / 60.0f;
+    const int32 velocityIterations = 6;
+    const int32 positionIterations = 2;
+    sf::Clock clock;
+    float timeSinceUpdate = 0;
+    sf::View view = sf::View(sf::FloatRect(0, 0, 19.20, 10.80));
+
+    std::vector<RectangleEntity> rectangleEntities;
+};
+
+int main()
+{
+    Game game;
+
+
 
     return 0;
 }
