@@ -1,6 +1,6 @@
 for f in ./Source/*.cpp; do
     echo "building $f"
-    g++ -c $f 
+    g++ -std=c++14 -c $f 
 done
 
 echo "linking game"
