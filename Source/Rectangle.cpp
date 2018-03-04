@@ -1,13 +1,13 @@
 #include "Rectangle.h"
 
-BaseRectangle::BaseRectangle(sf::Vector2f pos, sf::Vector2f size, float rotation, int id) {
+BaseRectangle::BaseRectangle(sf::Vector2f pos, sf::Vector2f size, float rotation, int _id) {
     shape = sf::RectangleShape(size);
     shape.setPosition(pos);
     shape.setRotation(rotation);
     shape.setOrigin(size.x/2, size.y/2);
 
     shape.setFillColor(sf::Color::Green);
-    id = id;
+    id = _id;
 }
 
 void BaseRectangle::draw(sf::RenderWindow &window) {
@@ -30,10 +30,10 @@ void NetworkRectangle::update(sf::Vector2f pos, sf::Vector2f size, float rotatio
 
 
 
-int32_t PhysicsRectangle::count = 0;
 PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
-    sf::Vector2f pos, sf::Vector2f size, float rotation, sf::TcpSocket &socket)
-    : BaseRectangle(pos, size, rotation, (++count)), socket(socket)
+    sf::Vector2f pos, sf::Vector2f size, float rotation,
+    sf::TcpSocket &socket, int &_id)
+    : BaseRectangle(pos, size, rotation, _id), socket(socket)
 {
     b2BodyDef bodyDef;
     if(!fixed)
@@ -51,12 +51,14 @@ PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
     fixtureDef.density = 1.0f;
     fixtureDef.friction = 0.3f;
     physicsBody->CreateFixture(&fixtureDef);
+    _id++;
 }
 void PhysicsRectangle::update() {
     shape.setPosition(physicsBody->GetPosition().x, physicsBody->GetPosition().y);
     shape.setRotation(physicsBody->GetAngle()*180.f/b2_pi);
     
     
+    std::cout << "ID: " << id << "\n";
     const int size = 4 /* event size */ + 4 /* id size */ + 4*5 /* 5 float size */;
     unsigned char data[size];
     auto updateType = RECTANGLE_UPDATE;

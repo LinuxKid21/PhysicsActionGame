@@ -1,4 +1,5 @@
 #pragma once
+#include "NetworkEvents.h"
 #include "Rectangle.h"
 
 #include <iostream>
@@ -47,7 +48,38 @@ private:
         std::size_t received;
         if (socket.receive(networkData, 2048, received) == sf::Socket::Done)
         {
-            std::cout << "Received " << received << " bytes from \n";// << sender << " on port " << port << std::endl;
+            if(received < 4) {
+                std::cerr << "invalid (too small) packet received\n";
+                return;
+            }
+            NetworkEvent event;
+            memcpy((char *)&event, networkData, 4);
+            if(event == RECTANGLE_UPDATE) {
+                int32_t id;
+                sf::Vector2f pos;
+                sf::Vector2f size;
+                float rotation;
+                memcpy((char *)&id, networkData+4, 4);
+                memcpy((char *)&pos.x, networkData+8, 4);
+                memcpy((char *)&pos.y, networkData+12, 4);
+                memcpy((char *)&size.x, networkData+16, 4);
+                memcpy((char *)&size.y, networkData+20, 4);
+                memcpy((char *)&rotation, networkData+24, 4);
+                
+                int idx = -1;
+                for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
+                    if(rectangleEntities[i].id == id) {
+                        idx = static_cast<unsigned int>(i);
+                        break;
+                    }
+                }
+                std::cout << "id: " << id << "\n";
+                if(idx == -1) {
+                    rectangleEntities.emplace_back(pos, size, rotation, id);
+                } else {
+                    rectangleEntities[idx].update(pos, size, rotation);
+                }
+            }
         }
     }
 
@@ -70,7 +102,7 @@ private:
     float timeSinceUpdate = 0;
     sf::View view = sf::View(sf::FloatRect(0, 0, 19.20, 10.80));
 
-    std::vector<PhysicsRectangle> rectangleEntities;
+    std::vector<NetworkRectangle> rectangleEntities;
     
     sf::TcpSocket socket;
     unsigned char networkData[2048]; // max network packet size is now 2048 bytes

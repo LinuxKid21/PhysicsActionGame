@@ -23,11 +23,10 @@ public:
 
 class PhysicsRectangle : public BaseRectangle {
 public:
-    PhysicsRectangle(b2World &physicsWorld, bool fixed, sf::Vector2f pos, sf::Vector2f size, float rotation, sf::TcpSocket &socket);
+    PhysicsRectangle(b2World &physicsWorld, bool fixed, sf::Vector2f pos, sf::Vector2f size, float rotation, sf::TcpSocket &socket, int &id);
     void update();
 private:
     b2Body *physicsBody;
-    static int32_t count;
     sf::TcpSocket &socket;
 };
 

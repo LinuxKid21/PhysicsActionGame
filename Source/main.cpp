@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     
     
     bool isServer = false;
-    for(int i = 0;i < args.size(); i++) {
+    for(unsigned int i = 0;i < args.size(); i++) {
         if(args[i] == "--server") {
             isServer = true;
         } else {
