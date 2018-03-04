@@ -76,7 +76,6 @@ void PhysicsRectangle::update() {
     if (socket.send(data, size) != sf::Socket::Done)
     {
         std::cerr << "unable to send data!\n";
-        std::cerr << sf::Socket::Disconnected << "\n";
     }
 }
 
