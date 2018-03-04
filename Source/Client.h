@@ -42,7 +42,7 @@ private:
         {
             std::cerr << "ERROR!!!!!!!!\n";
         }
-        //socket.setBlocking(false);
+        socket.setBlocking(false);
     }
 
     void update() {
@@ -59,7 +59,7 @@ private:
                 NetworkEvent event;
                 serial.deserialize(event);
                 if(event == RECTANGLE_UPDATE) {
-                    if(received < 28) {
+                    if(received < 28) { // rectangle update size
                         // packet incomplete, get next time!
                         leftOver = received;
                         memcpy(networkData, networkData+MAX_PACKET-leftOver, leftOver);
@@ -77,6 +77,7 @@ private:
                     serial.deserialize(size.y);
                     serial.deserialize(rotation);
                     
+                    // search for the index
                     int idx = -1;
                     for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
                         if(rectangleEntities[i].id == id) {
@@ -84,6 +85,8 @@ private:
                             break;
                         }
                     }
+                    
+                    // if it doesn't exist, create it! Otherwise update it
                     if(idx == -1) {
                         rectangleEntities.emplace_back(pos, size, rotation, id);
                     } else {
