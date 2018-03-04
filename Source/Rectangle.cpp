@@ -1,4 +1,5 @@
 #include "Rectangle.h"
+#include "Serial.h"
 
 BaseRectangle::BaseRectangle(sf::Vector2f pos, sf::Vector2f size, float rotation, int _id) {
     shape = sf::RectangleShape(size);
@@ -58,24 +59,23 @@ void PhysicsRectangle::update() {
     shape.setRotation(physicsBody->GetAngle()*180.f/b2_pi);
     
     
-    std::cout << "ID: " << id << "\n";
+    //std::cout << "ID: " << id << "\n";
     const int size = 4 /* event size */ + 4 /* id size */ + 4*5 /* 5 float size */;
     unsigned char data[size];
-    auto updateType = RECTANGLE_UPDATE;
-    auto rotation = shape.getRotation();
-    memcpy(data+0, (char *)&updateType, 4);
-    memcpy(data+4, (char *)&id, 4);
-    memcpy(data+8, (char *)&shape.getPosition().x, 4);
-    memcpy(data+12, (char *)&shape.getPosition().y, 4);
-    memcpy(data+16, (char *)&shape.getSize().x, 4);
-    memcpy(data+20, (char *)&shape.getSize().y, 4);
-    memcpy(data+24, (char *)&rotation, 4);
     
-    sf::Socket::Status var;
-    if ((var = socket.send(data, size)) != sf::Socket::Done)
+    Serial serial(data, size);
+    
+    serial.serialize(RECTANGLE_UPDATE);
+    serial.serialize(id);
+    serial.serialize(shape.getPosition().x);
+    serial.serialize(shape.getPosition().y);
+    serial.serialize(shape.getSize().x);
+    serial.serialize(shape.getSize().y);
+    serial.serialize(shape.getRotation());
+    
+    if (socket.send(data, size) != sf::Socket::Done)
     {
         std::cerr << "unable to send data!\n";
-        std::cerr << var << "\n";
         std::cerr << sf::Socket::Disconnected << "\n";
     }
 }

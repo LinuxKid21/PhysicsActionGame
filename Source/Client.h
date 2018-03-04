@@ -1,5 +1,6 @@
 #pragma once
 #include "NetworkEvents.h"
+#include "Serial.h"
 #include "Rectangle.h"
 
 #include <iostream>
@@ -48,15 +49,15 @@ private:
         std::size_t received;
         if (socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received) == sf::Socket::Done)
         {
+            Serial serial(networkData, MAX_PACKET);
             leftOver = 0; // reset leftOver
-            int offset = 0;
             while(received > 0) {
                 if(received < 4) {
                     std::cerr << "invalid (too small) packet received\n";
                     return;
                 }
                 NetworkEvent event;
-                memcpy((char *)&event, networkData + offset, 4); offset+=4;
+                serial.deserialize(event);
                 if(event == RECTANGLE_UPDATE) {
                     if(received < 28) {
                         // packet incomplete, get next time!
@@ -69,12 +70,12 @@ private:
                     sf::Vector2f pos;
                     sf::Vector2f size;
                     float rotation;
-                    memcpy((char *)&id, networkData+offset, 4); offset+=4;
-                    memcpy((char *)&pos.x, networkData+offset, 4); offset+=4;
-                    memcpy((char *)&pos.y, networkData+offset, 4); offset+=4;
-                    memcpy((char *)&size.x, networkData+offset, 4); offset+=4;
-                    memcpy((char *)&size.y, networkData+offset, 4); offset+=4;
-                    memcpy((char *)&rotation, networkData+offset, 4); offset+=4;
+                    serial.deserialize(id);
+                    serial.deserialize(pos.x);
+                    serial.deserialize(pos.y);
+                    serial.deserialize(size.x);
+                    serial.deserialize(size.y);
+                    serial.deserialize(rotation);
                     
                     int idx = -1;
                     for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
@@ -90,7 +91,7 @@ private:
                     }
                     received -= 28;
                 } else {
-                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << offset << "\n";
+                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
                     received = 0;
                 }
             }
