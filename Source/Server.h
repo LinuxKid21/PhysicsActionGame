@@ -42,9 +42,13 @@ public:
 private:
     //---------------------------------------------------------------------------------------------------- 
     void onStart() {
-        clientIPs.push_back("...");
-        if (socket.bind(54000) != sf::Socket::Done) {
-            std::cerr << "[ERROR] unable to bind to port 54000!\n";
+        if (listener.listen(54000) != sf::Socket::Done)
+        {
+            std::cerr << "ERROR!\n";
+        }
+        if (listener.accept(socket) != sf::Socket::Done)
+        {
+            std::cerr << "could not accept connection!\n";
         }
         
         // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
@@ -117,6 +121,7 @@ private:
 
     std::vector<PhysicsRectangle> rectangleEntities;
     
-    sf::UdpSocket socket;
+    sf::TcpSocket socket;
+    sf::TcpListener listener;
     std::vector<sf::IpAddress> clientIPs;
 };

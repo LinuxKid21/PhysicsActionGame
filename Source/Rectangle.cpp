@@ -32,7 +32,7 @@ void NetworkRectangle::update(sf::Vector2f pos, sf::Vector2f size, float rotatio
 
 int32_t PhysicsRectangle::count = 0;
 PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
-    sf::Vector2f pos, sf::Vector2f size, float rotation, sf::UdpSocket &socket)
+    sf::Vector2f pos, sf::Vector2f size, float rotation, sf::TcpSocket &socket)
     : BaseRectangle(pos, size, rotation, (++count)), socket(socket)
 {
     b2BodyDef bodyDef;
@@ -69,12 +69,12 @@ void PhysicsRectangle::update() {
     memcpy(data+20, (char *)&shape.getSize().y, 4);
     memcpy(data+24, (char *)&rotation, 4);
     
-    // This PC
-    sf::IpAddress recipient = "10.0.0.108";
-    unsigned short port = 54000;
-    if (socket.send(data, size, recipient, port) != sf::Socket::Done)
+    sf::Socket::Status var;
+    if ((var = socket.send(data, size)) != sf::Socket::Done)
     {
         std::cerr << "unable to send data!\n";
+        std::cerr << var << "\n";
+        std::cerr << sf::Socket::Disconnected << "\n";
     }
 }
 

@@ -35,16 +35,19 @@ public:
 
 private:
     void onStart() {
-        
+        sf::Socket::Status status = socket.connect("127.0.0.1", 54000);
+        if (status != sf::Socket::Done)
+        {
+            std::cerr << "ERROR!!!!!!!!\n";
+        }
+        //socket.setBlocking(false);
     }
 
     void update() {
-        unsigned short port;
-        sf::IpAddress sender;
         std::size_t received;
-        while (socket.receive(networkData, 100, received, sender, port) == sf::Socket::Done)
+        if (socket.receive(networkData, 2048, received) == sf::Socket::Done)
         {
-            std::cout << "Received " << received << " bytes from " << sender << " on port " << port << std::endl;
+            std::cout << "Received " << received << " bytes from \n";// << sender << " on port " << port << std::endl;
         }
     }
 
@@ -69,6 +72,6 @@ private:
 
     std::vector<PhysicsRectangle> rectangleEntities;
     
-    sf::UdpSocket socket;
+    sf::TcpSocket socket;
     unsigned char networkData[2048]; // max network packet size is now 2048 bytes
 };
