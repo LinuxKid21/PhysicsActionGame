@@ -46,38 +46,52 @@ private:
 
     void update() {
         std::size_t received;
-        if (socket.receive(networkData, 2048, received) == sf::Socket::Done)
+        if (socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received) == sf::Socket::Done)
         {
-            if(received < 4) {
-                std::cerr << "invalid (too small) packet received\n";
-                return;
-            }
-            NetworkEvent event;
-            memcpy((char *)&event, networkData, 4);
-            if(event == RECTANGLE_UPDATE) {
-                int32_t id;
-                sf::Vector2f pos;
-                sf::Vector2f size;
-                float rotation;
-                memcpy((char *)&id, networkData+4, 4);
-                memcpy((char *)&pos.x, networkData+8, 4);
-                memcpy((char *)&pos.y, networkData+12, 4);
-                memcpy((char *)&size.x, networkData+16, 4);
-                memcpy((char *)&size.y, networkData+20, 4);
-                memcpy((char *)&rotation, networkData+24, 4);
-                
-                int idx = -1;
-                for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
-                    if(rectangleEntities[i].id == id) {
-                        idx = static_cast<unsigned int>(i);
-                        break;
-                    }
+            leftOver = 0; // reset leftOver
+            int offset = 0;
+            while(received > 0) {
+                if(received < 4) {
+                    std::cerr << "invalid (too small) packet received\n";
+                    return;
                 }
-                std::cout << "id: " << id << "\n";
-                if(idx == -1) {
-                    rectangleEntities.emplace_back(pos, size, rotation, id);
+                NetworkEvent event;
+                memcpy((char *)&event, networkData + offset, 4); offset+=4;
+                if(event == RECTANGLE_UPDATE) {
+                    if(received < 28) {
+                        // packet incomplete, get next time!
+                        leftOver = received;
+                        memcpy(networkData, networkData+MAX_PACKET-leftOver, leftOver);
+                        return;
+                    }
+                    
+                    int32_t id;
+                    sf::Vector2f pos;
+                    sf::Vector2f size;
+                    float rotation;
+                    memcpy((char *)&id, networkData+offset, 4); offset+=4;
+                    memcpy((char *)&pos.x, networkData+offset, 4); offset+=4;
+                    memcpy((char *)&pos.y, networkData+offset, 4); offset+=4;
+                    memcpy((char *)&size.x, networkData+offset, 4); offset+=4;
+                    memcpy((char *)&size.y, networkData+offset, 4); offset+=4;
+                    memcpy((char *)&rotation, networkData+offset, 4); offset+=4;
+                    
+                    int idx = -1;
+                    for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
+                        if(rectangleEntities[i].id == id) {
+                            idx = static_cast<unsigned int>(i);
+                            break;
+                        }
+                    }
+                    if(idx == -1) {
+                        rectangleEntities.emplace_back(pos, size, rotation, id);
+                    } else {
+                        rectangleEntities[idx].update(pos, size, rotation);
+                    }
+                    received -= 28;
                 } else {
-                    rectangleEntities[idx].update(pos, size, rotation);
+                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << offset << "\n";
+                    received = 0;
                 }
             }
         }
@@ -105,5 +119,8 @@ private:
     std::vector<NetworkRectangle> rectangleEntities;
     
     sf::TcpSocket socket;
-    unsigned char networkData[2048]; // max network packet size is now 2048 bytes
+    
+    constexpr static size_t MAX_PACKET = 1048*100; // arbitray value - 100 kB
+    size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
+    unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
