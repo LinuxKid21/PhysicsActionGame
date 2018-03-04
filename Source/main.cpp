@@ -29,9 +29,10 @@ int main(int argc, char *argv[])
         }
     }
     
-    
-    Server server;
-
+    if(isServer)
+        Server server;
+    else
+        Client client;
 
 
     return 0;

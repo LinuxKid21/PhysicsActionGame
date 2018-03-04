@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <SFML/Graphics.hpp>
+#include <SFML/Network.hpp>
 
 class Client {
 public:
@@ -24,6 +25,8 @@ public:
             float delta = clock.restart().asSeconds();
             timeSinceUpdate += delta;
 
+            update();
+
             window.clear();
             draw();
             window.display();
@@ -36,8 +39,12 @@ private:
     }
 
     void update() {
-        for(auto &e : rectangleEntities) {
-            e.update();
+        unsigned short port;
+        sf::IpAddress sender;
+        std::size_t received;
+        while (socket.receive(networkData, 100, received, sender, port) == sf::Socket::Done)
+        {
+            std::cout << "Received " << received << " bytes from " << sender << " on port " << port << std::endl;
         }
     }
 
@@ -61,4 +68,7 @@ private:
     sf::View view = sf::View(sf::FloatRect(0, 0, 19.20, 10.80));
 
     std::vector<PhysicsRectangle> rectangleEntities;
+    
+    sf::UdpSocket socket;
+    unsigned char networkData[2048]; // max network packet size is now 2048 bytes
 };

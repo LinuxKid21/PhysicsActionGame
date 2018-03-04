@@ -5,6 +5,7 @@
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include <Box2D/Box2D.h>
+#include <SFML/Network.hpp>
 
 
 class Server {
@@ -41,8 +42,13 @@ public:
 private:
     //---------------------------------------------------------------------------------------------------- 
     void onStart() {
+        clientIPs.push_back("...");
+        if (socket.bind(54000) != sf::Socket::Done) {
+            std::cerr << "[ERROR] unable to bind to port 54000!\n";
+        }
+        
         // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
-        rectangleEntities.push_back(PhysicsRectangle(world, true, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0));
+        rectangleEntities.push_back(PhysicsRectangle(world, true, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, socket));
 
         float width = 2;
         float height = 2;
@@ -73,9 +79,9 @@ private:
     void handleGameEvent(const sf::Event &event) {
         if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
             for(int i = 0;i < 25; i++)
-                rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0));
+                rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0, socket));
         if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
-            rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45));
+            rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45, socket));
     }
 
     //---------------------------------------------------------------------------------------------------- 
@@ -83,15 +89,15 @@ private:
         float legHeight = size.y-thickness;
         rectangleEntities.push_back(PhysicsRectangle(world, false,
                                                     sf::Vector2f(pos.x+size.x/2.f-thickness/2.f, pos.y+thickness/2.f),
-                                                    sf::Vector2f(thickness, legHeight), 0));
+                                                    sf::Vector2f(thickness, legHeight), 0, socket));
 
         rectangleEntities.push_back(PhysicsRectangle(world, false,
                                                     sf::Vector2f(pos.x-size.x/2.f+thickness/2.f, pos.y+thickness/2.f),
-                                                    sf::Vector2f(thickness, legHeight), 0));
+                                                    sf::Vector2f(thickness, legHeight), 0, socket));
 
         rectangleEntities.push_back(PhysicsRectangle(world, false,
                                                     sf::Vector2f(pos.x, pos.y -size.y/2.f+thickness/2.f),
-                                                    sf::Vector2f(size.x, thickness), 0));
+                                                    sf::Vector2f(size.x, thickness), 0, socket));
     }
 
 
@@ -110,4 +116,7 @@ private:
     sf::View view = sf::View(sf::FloatRect(0, 0, 19.20, 10.80));
 
     std::vector<PhysicsRectangle> rectangleEntities;
+    
+    sf::UdpSocket socket;
+    std::vector<sf::IpAddress> clientIPs;
 };
