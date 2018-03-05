@@ -175,18 +175,10 @@ public:
             acceptNewConnections();
             readConnectionData();
         }
-            
-        //std::thread t1(&Server::acceptNewConnections, this);
-        //std::thread t2(&Server::readConnectionData, this);
-        
-        //t1.join();
-        //t2.join();
     }
 private:
     void acceptNewConnections() {
-        //socketsMutex.lock();
         sockets.push_back(new sf::TcpSocket());
-        //socketsMutex.unlock();
         sf::Socket::Status status;
         if ((status = listener.accept(*sockets.back())) != sf::Socket::Done && status != sf::Socket::NotReady)
         {
@@ -196,14 +188,12 @@ private:
     }
     
     void readConnectionData() {
-        //socketsMutex.lock();
         for(unsigned int i = 0;i < sockets.size(); i++) {
             if(_readConnectionData(*sockets[i])) {
                 sockets.erase(sockets.begin() + i);
                 i--;
             }
         }
-        //socketsMutex.unlock();
     }
     
     bool _readConnectionData(sf::TcpSocket &socket) {
@@ -270,7 +260,6 @@ private:
     }
     
     std::vector<sf::TcpSocket *> sockets;
-    std::mutex socketsMutex;
     
     std::vector<ServerGame *> games;
     sf::TcpListener listener;
