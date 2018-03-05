@@ -54,6 +54,8 @@ PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
     _id++;
 }
 void PhysicsRectangle::update(sf::TcpSocket &socket) {
+    if(!physicsBody->IsAwake()) return; // nothing to do
+    
     shape.setPosition(physicsBody->GetPosition().x, physicsBody->GetPosition().y);
     shape.setRotation(physicsBody->GetAngle()*180.f/b2_pi);
     
