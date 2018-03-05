@@ -1,5 +1,5 @@
 #pragma once
-#include "Rectangle.h"
+#include "../Share/Rectangle.h"
 
 #include <iostream>
 #include <thread>

@@ -1,7 +1,7 @@
 #pragma once
-#include "NetworkEvents.h"
-#include "Serial.h"
-#include "Rectangle.h"
+#include "../Share/NetworkEvents.h"
+#include "../Share/Serial.h"
+#include "../Share/Rectangle.h"
 
 #include <iostream>
 #include <vector>
