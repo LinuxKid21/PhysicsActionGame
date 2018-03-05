@@ -11,9 +11,14 @@
 
 class Client {
 public:
-    Client() : window(sf::VideoMode(192*3, 180*3), "THE GAME")
+    Client(std::string serverIP) : window(sf::VideoMode(192*3, 180*3), "THE GAME")
     {
         window.setView(view);
+        sf::Socket::Status status = socket.connect(serverIP, 54000);
+        if (status != sf::Socket::Done)
+        {
+            std::cerr << "ERROR!!!!!!!!\n";
+        }
         onStart();
         while (window.isOpen())
         {
@@ -40,12 +45,6 @@ public:
 
 private:
     void onStart() {
-        sf::Socket::Status status = socket.connect("127.0.0.1", 54000);
-        if (status != sf::Socket::Done)
-        {
-            std::cerr << "ERROR!!!!!!!!\n";
-        }
-        
         loadMainMenu();
         
         socket.setBlocking(false);

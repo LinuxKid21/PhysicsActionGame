@@ -12,7 +12,11 @@
 
 int main(int argc, char *argv[])
 {
-    Client client;
+    std::string serverIP = "127.0.0.1";
+    if(argc >= 2) {
+        serverIP = argv[1];
+    } 
+    Client client(serverIP);
 
     return 0;
 }
