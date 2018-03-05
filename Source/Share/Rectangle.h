@@ -27,5 +27,6 @@ public:
     void update(sf::TcpSocket &socket);
 private:
     b2Body *physicsBody;
+    bool firstUpdate = true;
 };
 
