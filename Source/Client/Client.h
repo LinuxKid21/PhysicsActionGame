@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <SFML/Graphics.hpp>
 #include <SFML/Network.hpp>
 
@@ -45,12 +46,7 @@ private:
             std::cerr << "ERROR!!!!!!!!\n";
         }
         
-        NetworkEvent e = CREATE_GAME;
-        socket.send((char *)&e, sizeof(e));
-        
-        int32_t gameID;
-        size_t received;
-        socket.receive((char *)&gameID, sizeof(gameID), received);
+        loadMainMenu();
         
         socket.setBlocking(false);
     }
@@ -117,6 +113,28 @@ private:
     // handles non-window events
     void handleGameEvent(const sf::Event &event) {
         ;
+    }
+    
+    void loadMainMenu() {
+        std::cerr << "enter command: ";
+        std::string command;// = "create";
+        std::cin >> command;
+        
+        if(command == "create") {
+            NetworkEvent e = CREATE_GAME;
+            socket.send((char *)&e, sizeof(e));
+            
+            int32_t gameID;
+            size_t received;
+            socket.receive((char *)&gameID, sizeof(gameID), received);
+            
+            std::cerr << "joined game #" << gameID << "!\n";
+            return;
+        } else {
+            std::cout << "UNKOWN COMMAND!\n";
+        }
+        
+        loadMainMenu(); // loop again!
     }
     
     //---------------------------------------------------------------------------------------------------- 

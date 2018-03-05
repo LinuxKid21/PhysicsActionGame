@@ -119,46 +119,49 @@ class Server {
 public:
     //---------------------------------------------------------------------------------------------------- 
     Server()
-    {    
+    {
         if (listener.listen(54000) != sf::Socket::Done)
         {
             std::cerr << "ERROR!\n";
         }
         
-        std::thread t1(&Server::acceptNewConnections, this);
-        std::thread t2(&Server::readConnectionData, this);
+        listener.setBlocking(false);
+        while(true) {
+            acceptNewConnections();
+            readConnectionData();
+        }
+            
+        //std::thread t1(&Server::acceptNewConnections, this);
+        //std::thread t2(&Server::readConnectionData, this);
         
-        t1.join();
-        t2.join();
+        //t1.join();
+        //t2.join();
     }
 private:
     void acceptNewConnections() {
-        while(true) {
-            socketsMutex.lock();
-            sockets.push_back(new sf::TcpSocket());
-            socketsMutex.unlock();
-            if (listener.accept(*sockets.back()) != sf::Socket::Done)
-            {
-                std::cerr << "could not accept connection!\n";
-            }
+        //socketsMutex.lock();
+        sockets.push_back(new sf::TcpSocket());
+        //socketsMutex.unlock();
+        sf::Socket::Status status;
+        if ((status = listener.accept(*sockets.back())) != sf::Socket::Done && status != sf::Socket::NotReady)
+        {
+            std::cerr << "could not accept connection!\n";
         }
+        sockets.back()->setBlocking(false);
     }
     
     void readConnectionData() {
-        while(true) {
-            socketsMutex.lock();
-            for(unsigned int i = 0;i < sockets.size(); i++) {
-                if(_readConnectionData(*sockets[i])) {
-                    sockets.erase(sockets.begin() + i);
-                    i--;
-                }
+        //socketsMutex.lock();
+        for(unsigned int i = 0;i < sockets.size(); i++) {
+            if(_readConnectionData(*sockets[i])) {
+                sockets.erase(sockets.begin() + i);
+                i--;
             }
-            socketsMutex.unlock();
         }
+        //socketsMutex.unlock();
     }
     
     bool _readConnectionData(sf::TcpSocket &socket) {
-        socket.setBlocking(false);
         size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
         std::size_t received;
         
@@ -180,7 +183,7 @@ private:
                     socket.send((char *)&currentGameID, 4);
                     
                     games.push_back(new ServerGame(currentGameID));
-                    games.back()->socket = sockets.back();
+                    games.back()->socket = &socket;
                     std::thread t(&ServerGame::start, std::ref(*games.back()));
                     t.detach();
                     currentGameID++;
@@ -194,6 +197,7 @@ private:
                 }
             }
         }
+        socket.setBlocking(false);
         return transferSocket;
     }
     
