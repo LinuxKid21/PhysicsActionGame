@@ -112,7 +112,40 @@ private:
 
     // handles non-window events
     void handleGameEvent(const sf::Event &event) {
-        ;
+        float x = event.mouseButton.x/1920.f*19.2;
+        float y = event.mouseButton.y/1080.f*10.8;
+        
+        float s_x;
+        float s_y;
+        float rot;
+        
+        if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right) {
+            s_x = .1;
+            s_y = .1;
+            rot = 0;
+        }
+        else if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+            s_x = .5;
+            s_y = 1.7;
+            rot = 45;
+        }
+        else {
+            return;
+        }
+        
+        constexpr size_t size = 4 /*event*/ + 5*4 /* 5 floats */; 
+        unsigned char data[size];
+        Serial serial(data, size);
+        serial.serialize(CREATE_RECTANGLE);
+        serial.serialize(x);
+        serial.serialize(y);
+        serial.serialize(s_x);
+        serial.serialize(s_y);
+        serial.serialize(rot);
+        
+        socket.setBlocking(true);
+        socket.send(data, size);
+        socket.setBlocking(false);
     }
     
     void loadMainMenu() {

@@ -72,7 +72,52 @@ private:
         for(auto &e : rectangleEntities) {
             e.update(*socket);
             if(socketP2)
-            e.update(*socketP2);
+                e.update(*socketP2);
+        }
+        
+        handleInput(*socket);
+        if(socketP2)
+            handleInput(*socketP2);
+    }
+    
+    void handleInput(sf::TcpSocket &socket) {
+        socket.setBlocking(false);
+        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
+        std::size_t received;
+        
+        sf::Socket::Status status;
+        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
+            leftOver += received;
+        }
+
+        received += leftOver; // make it the total received
+        if (status == sf::Socket::Done)
+        {
+            Serial serial(networkData, MAX_PACKET);
+            while(received > 0) {
+                NetworkEvent event;
+                serial.deserialize(event);
+                if(event == CREATE_RECTANGLE) {
+                    float x;
+                    float y;
+                    float s_x;
+                    float s_y;
+                    float rot;
+                    serial.deserialize(x);
+                    serial.deserialize(y);
+                    serial.deserialize(s_x);
+                    serial.deserialize(s_y);
+                    serial.deserialize(rot);
+                    
+                    rectangleEntities.push_back(PhysicsRectangle(world, false,
+                        sf::Vector2f(x,y), sf::Vector2f(s_x, s_y), rot, currentRectID));
+                    
+                    received -= 24;
+                } else {
+                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
+                    received = 0;
+                }
+            }
         }
     }
 
@@ -114,6 +159,9 @@ private:
     std::vector<PhysicsRectangle> rectangleEntities;
     int currentRectID = 0;
     int gameID;
+    
+    constexpr static size_t MAX_PACKET = 1048*100; // arbitray value - 100 kB
+    unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
 
 
