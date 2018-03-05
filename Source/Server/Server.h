@@ -154,7 +154,7 @@ private:
     int currentRectID = 0;
     int gameID;
     
-    constexpr static size_t MAX_PACKET = 1048*1000; // arbitray value - 1000 kB
+    constexpr static size_t MAX_PACKET = 1024*1024*10; // arbitray value - 10 MB
     unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
 
@@ -266,6 +266,6 @@ private:
     
     int32_t currentGameID = 0;
     
-    constexpr static size_t MAX_PACKET = 1048*1000; // arbitray value - 1000 kB
+    constexpr static size_t MAX_PACKET = 1024*1024*10; // arbitray value - 10 MB
     unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
