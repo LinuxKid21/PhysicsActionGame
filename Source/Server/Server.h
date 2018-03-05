@@ -45,13 +45,14 @@ public:
         }
     }
     
-    sf::TcpSocket *socket;
+    sf::TcpSocket *socket = nullptr;
+    sf::TcpSocket *socketP2 = nullptr;
     
     int32_t getGameID() const {return gameID;}
 private:
     void onStart() {
         // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
-        rectangleEntities.push_back(PhysicsRectangle(world, true, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, *socket, currentRectID));
+        rectangleEntities.push_back(PhysicsRectangle(world, true, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, currentRectID));
 
         float width = 2;
         float height = 2;
@@ -69,7 +70,9 @@ private:
 
     void update() {
         for(auto &e : rectangleEntities) {
-            e.update();
+            e.update(*socket);
+            if(socketP2)
+            e.update(*socketP2);
         }
     }
 
@@ -77,9 +80,9 @@ private:
     void handleGameEvent(const sf::Event &event) {
         if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right)
             for(int i = 0;i < 25; i++)
-                rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0, *socket, currentRectID));
+                rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.1, .1), 0, currentRectID));
         if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left)
-            rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45, *socket, currentRectID));
+            rectangleEntities.push_back(PhysicsRectangle(world, false, sf::Vector2f(event.mouseButton.x/1920.f*19.2,event.mouseButton.y/1080.f*10.8), sf::Vector2f(.5, 1.7), 45, currentRectID));
     }
 
     //---------------------------------------------------------------------------------------------------- 
@@ -87,15 +90,15 @@ private:
         float legHeight = size.y-thickness;
         rectangleEntities.push_back(PhysicsRectangle(world, false,
                                                     sf::Vector2f(pos.x+size.x/2.f-thickness/2.f, pos.y+thickness/2.f),
-                                                    sf::Vector2f(thickness, legHeight), 0, *socket, currentRectID));
+                                                    sf::Vector2f(thickness, legHeight), 0, currentRectID));
 
         rectangleEntities.push_back(PhysicsRectangle(world, false,
                                                     sf::Vector2f(pos.x-size.x/2.f+thickness/2.f, pos.y+thickness/2.f),
-                                                    sf::Vector2f(thickness, legHeight), 0, *socket, currentRectID));
+                                                    sf::Vector2f(thickness, legHeight), 0, currentRectID));
 
         rectangleEntities.push_back(PhysicsRectangle(world, false,
                                                     sf::Vector2f(pos.x, pos.y -size.y/2.f+thickness/2.f),
-                                                    sf::Vector2f(size.x, thickness), 0, *socket, currentRectID));
+                                                    sf::Vector2f(size.x, thickness), 0, currentRectID));
     }
 
 
@@ -191,6 +194,29 @@ private:
                     transferSocket = true;
                     
                     received -= 4;
+                } else if(event == LIST_GAMES) {
+                    uint32_t gameCount = games.size();
+                    socket.send((char *)&gameCount, 4);
+                    for(auto g : games) {
+                        int32_t id = g->getGameID();
+                        socket.send((char *)&id, 4);
+                    }
+                } else if(event == JOIN_GAME) {
+                    int32_t id;
+                    serial.deserialize(id);
+                    for(auto g : games) {
+                        if(g->getGameID() == id) {
+                            g->socketP2 = &socket;
+                            transferSocket = true;
+                            break;
+                        }
+                    }
+                    if(transferSocket) {
+                        socket.send((char *)&id, 4);
+                    } else {
+                        int32_t badID = -1; // report no such game (-1)
+                        socket.send((char *)&badID, 4);
+                    }
                 } else {
                     std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
                     received = 0;

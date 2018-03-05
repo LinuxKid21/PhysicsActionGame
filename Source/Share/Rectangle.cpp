@@ -32,9 +32,8 @@ void NetworkRectangle::update(sf::Vector2f pos, sf::Vector2f size, float rotatio
 
 
 PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
-    sf::Vector2f pos, sf::Vector2f size, float rotation,
-    sf::TcpSocket &socket, int &_id)
-    : BaseRectangle(pos, size, rotation, _id), socket(socket)
+    sf::Vector2f pos, sf::Vector2f size, float rotation, int &_id)
+    : BaseRectangle(pos, size, rotation, _id)
 {
     b2BodyDef bodyDef;
     if(!fixed)
@@ -54,7 +53,7 @@ PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
     physicsBody->CreateFixture(&fixtureDef);
     _id++;
 }
-void PhysicsRectangle::update() {
+void PhysicsRectangle::update(sf::TcpSocket &socket) {
     shape.setPosition(physicsBody->GetPosition().x, physicsBody->GetPosition().y);
     shape.setRotation(physicsBody->GetAngle()*180.f/b2_pi);
     
