@@ -100,19 +100,13 @@ private:
                 if(event == CREATE_RECTANGLE) {
                     float x;
                     float y;
-                    float s_x;
-                    float s_y;
-                    float rot;
                     serial.deserialize(x);
                     serial.deserialize(y);
-                    serial.deserialize(s_x);
-                    serial.deserialize(s_y);
-                    serial.deserialize(rot);
                     
                     rectangleEntities.push_back(PhysicsRectangle(world, false,
-                        sf::Vector2f(x,y), sf::Vector2f(s_x, s_y), rot, currentRectID));
+                        sf::Vector2f(x,y), sf::Vector2f(.1, .1), 0, currentRectID));
                     
-                    received -= 24;
+                    received -= 12;
                 } else {
                     std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
                     received = 0;
