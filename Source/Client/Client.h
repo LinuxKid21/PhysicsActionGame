@@ -203,6 +203,6 @@ private:
     
     sf::TcpSocket socket;
     
-    constexpr static size_t MAX_PACKET = 1048*100; // arbitray value - 100 kB
+    constexpr static size_t MAX_PACKET = 1048*1000; // arbitray value - 1000 kB
     unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
