@@ -48,26 +48,22 @@ private:
     }
 
     void update() {
+        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
         std::size_t received;
-        if (socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received) == sf::Socket::Done)
+        
+        sf::Socket::Status status;
+        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
+            leftOver += received;
+        }
+
+        received += leftOver; // make it the total received
+        if (status == sf::Socket::Done)
         {
             Serial serial(networkData, MAX_PACKET);
-            leftOver = 0; // reset leftOver
             while(received > 0) {
-                if(received < 4) {
-                    std::cerr << "invalid (too small) packet received\n";
-                    return;
-                }
                 NetworkEvent event;
                 serial.deserialize(event);
                 if(event == RECTANGLE_UPDATE) {
-                    if(received < 28) { // rectangle update size
-                        // packet incomplete, get next time!
-                        leftOver = received;
-                        memcpy(networkData, networkData+MAX_PACKET-leftOver, leftOver);
-                        return;
-                    }
-                    
                     int32_t id;
                     sf::Vector2f pos;
                     sf::Vector2f size;
@@ -127,6 +123,5 @@ private:
     sf::TcpSocket socket;
     
     constexpr static size_t MAX_PACKET = 1048*100; // arbitray value - 100 kB
-    size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
     unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
