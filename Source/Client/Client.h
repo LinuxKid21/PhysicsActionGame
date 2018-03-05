@@ -33,6 +33,8 @@ public:
             draw();
             window.display();
         }
+        
+        socket.disconnect();
     }
 
 private:

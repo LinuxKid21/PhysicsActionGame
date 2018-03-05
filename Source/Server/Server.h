@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <list>
 #include <SFML/Graphics.hpp>
 #include <Box2D/Box2D.h>
 #include <SFML/Network.hpp>
@@ -113,25 +114,29 @@ class Server {
 public:
     //---------------------------------------------------------------------------------------------------- 
     Server()
-    {
+    {    
         if (listener.listen(54000) != sf::Socket::Done)
         {
             std::cerr << "ERROR!\n";
         }
         while(true) {
-            if (listener.accept(sockets[socketCount]) != sf::Socket::Done)
-            {
-                std::cerr << "could not accept connection!\n";
-            }
-            games[socketCount].socket = &sockets[socketCount];
-            std::thread t(&ServerGame::start, std::ref(games[socketCount]));
-            t.detach();
-            socketCount++;
+            acceptNewConnection();
         }
     }
 private:
-    sf::TcpSocket sockets[10]; // support 1000 socket!
-    ServerGame games[10]; // support 1000 socket!
-    int socketCount = 0;
+    void acceptNewConnection() {
+        sockets.push_back(new sf::TcpSocket());
+        if (listener.accept(*sockets.back()) != sf::Socket::Done)
+        {
+            std::cerr << "could not accept connection!\n";
+        }
+        games.push_back(new ServerGame());
+        games.back()->socket = sockets.back();
+        std::thread t(&ServerGame::start, std::ref(*games.back()));
+        t.detach();
+    }
+    
+    std::vector<sf::TcpSocket *> sockets;
+    std::vector<ServerGame *> games;
     sf::TcpListener listener;
 };
