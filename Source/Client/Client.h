@@ -64,6 +64,7 @@ private:
                 NetworkEvent event;
                 serial.deserialize(event);
                 if(event == RECTANGLE_UPDATE) {
+                    
                     int32_t id;
                     sf::Vector2f pos;
                     sf::Vector2f size;

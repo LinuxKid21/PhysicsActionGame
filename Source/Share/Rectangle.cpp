@@ -59,7 +59,7 @@ void PhysicsRectangle::update() {
     shape.setRotation(physicsBody->GetAngle()*180.f/b2_pi);
     
     
-    //std::cout << "ID: " << id << "\n";
+    socket.setBlocking(true);
     const int size = 4 /* event size */ + 4 /* id size */ + 4*5 /* 5 float size */;
     unsigned char data[size];
     

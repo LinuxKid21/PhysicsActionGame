@@ -1,8 +1,10 @@
 #pragma once
 #include "../Share/Rectangle.h"
+#include "../Share/Serial.h"
 
 #include <iostream>
 #include <thread>
+#include <mutex>
 #include <vector>
 #include <list>
 #include <SFML/Graphics.hpp>
@@ -119,24 +121,75 @@ public:
         {
             std::cerr << "ERROR!\n";
         }
-        while(true) {
-            acceptNewConnection();
-        }
+        
+        std::thread t1(&Server::acceptNewConnections, this);
+        std::thread t2(&Server::readConnectionData, this);
+        
+        t1.join();
+        t2.join();
     }
 private:
-    void acceptNewConnection() {
-        sockets.push_back(new sf::TcpSocket());
-        if (listener.accept(*sockets.back()) != sf::Socket::Done)
-        {
-            std::cerr << "could not accept connection!\n";
+    void acceptNewConnections() {
+        while(true) {
+            socketsMutex.lock();
+            sockets.push_back(new sf::TcpSocket());
+            socketsMutex.unlock();
+            if (listener.accept(*sockets.back()) != sf::Socket::Done)
+            {
+                std::cerr << "could not accept connection!\n";
+            }
+            games.push_back(new ServerGame());
+            games.back()->socket = sockets.back();
+            std::thread t(&ServerGame::start, std::ref(*games.back()));
+            t.detach();
         }
-        games.push_back(new ServerGame());
-        games.back()->socket = sockets.back();
-        std::thread t(&ServerGame::start, std::ref(*games.back()));
-        t.detach();
+    }
+    
+    void readConnectionData() {
+        while(true) {
+            socketsMutex.lock();
+            for(unsigned int i = 0;i < sockets.size(); i++) {
+                _readConnectionData(*sockets[i]);
+            }
+            socketsMutex.unlock();
+        }
+    }
+    
+    void _readConnectionData(sf::TcpSocket &socket) {
+        socket.setBlocking(false);
+        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
+        std::size_t received;
+        
+        sf::Socket::Status status;
+        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
+            leftOver += received;
+        }
+
+        received += leftOver; // make it the total received
+        if (status == sf::Socket::Done)
+        {
+            Serial serial(networkData, MAX_PACKET);
+            while(received > 0) {
+                NetworkEvent event;
+                serial.deserialize(event);
+                if(event == RECTANGLE_UPDATE) {
+                    
+                    received -= 28;
+                } else {
+                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
+                    received = 0;
+                }
+            }
+        }
+        socket.setBlocking(true);
     }
     
     std::vector<sf::TcpSocket *> sockets;
+    std::mutex socketsMutex;
+    
     std::vector<ServerGame *> games;
     sf::TcpListener listener;
+    
+    constexpr static size_t MAX_PACKET = 1048*100; // arbitray value - 100 kB
+    unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
