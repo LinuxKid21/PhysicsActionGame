@@ -8,4 +8,10 @@ enum NetworkEvent : int32_t {
     RECTANGLE_UPDATE,
     
     // clients to server events
+    REGISTER_PLAYER,
+    LIST_GAMES,
+    CREATE_GAME,
+    JOIN_GAME,
+    EXIT_GAME,
+    UNREGISTER_PLAYER
 };
