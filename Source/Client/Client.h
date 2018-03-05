@@ -44,6 +44,14 @@ private:
         {
             std::cerr << "ERROR!!!!!!!!\n";
         }
+        
+        NetworkEvent e = CREATE_GAME;
+        socket.send((char *)&e, sizeof(e));
+        
+        int32_t gameID;
+        size_t received;
+        socket.receive((char *)&gameID, sizeof(gameID), received);
+        
         socket.setBlocking(false);
     }
 

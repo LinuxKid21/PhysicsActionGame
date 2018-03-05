@@ -14,7 +14,7 @@
 
 class ServerGame {
 public:
-    ServerGame() : world(b2Vec2(0.0f,10.f))
+    ServerGame(int32_t id) : world(b2Vec2(0.0f,10.f)), gameID(id)
     {
     }
     
@@ -46,6 +46,8 @@ public:
     }
     
     sf::TcpSocket *socket;
+    
+    int32_t getGameID() const {return gameID;}
 private:
     void onStart() {
         // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
@@ -108,6 +110,7 @@ private:
 
     std::vector<PhysicsRectangle> rectangleEntities;
     int currentRectID = 0;
+    int gameID;
 };
 
 
@@ -138,10 +141,6 @@ private:
             {
                 std::cerr << "could not accept connection!\n";
             }
-            games.push_back(new ServerGame());
-            games.back()->socket = sockets.back();
-            std::thread t(&ServerGame::start, std::ref(*games.back()));
-            t.detach();
         }
     }
     
@@ -149,13 +148,16 @@ private:
         while(true) {
             socketsMutex.lock();
             for(unsigned int i = 0;i < sockets.size(); i++) {
-                _readConnectionData(*sockets[i]);
+                if(_readConnectionData(*sockets[i])) {
+                    sockets.erase(sockets.begin() + i);
+                    i--;
+                }
             }
             socketsMutex.unlock();
         }
     }
     
-    void _readConnectionData(sf::TcpSocket &socket) {
+    bool _readConnectionData(sf::TcpSocket &socket) {
         socket.setBlocking(false);
         size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
         std::size_t received;
@@ -164,7 +166,9 @@ private:
         while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
             leftOver += received;
         }
+        socket.setBlocking(true);
 
+        bool transferSocket = false;
         received += leftOver; // make it the total received
         if (status == sf::Socket::Done)
         {
@@ -172,16 +176,25 @@ private:
             while(received > 0) {
                 NetworkEvent event;
                 serial.deserialize(event);
-                if(event == RECTANGLE_UPDATE) {
+                if(event == CREATE_GAME) {
+                    socket.send((char *)&currentGameID, 4);
                     
-                    received -= 28;
+                    games.push_back(new ServerGame(currentGameID));
+                    games.back()->socket = sockets.back();
+                    std::thread t(&ServerGame::start, std::ref(*games.back()));
+                    t.detach();
+                    currentGameID++;
+                    
+                    transferSocket = true;
+                    
+                    received -= 4;
                 } else {
                     std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
                     received = 0;
                 }
             }
         }
-        socket.setBlocking(true);
+        return transferSocket;
     }
     
     std::vector<sf::TcpSocket *> sockets;
@@ -189,6 +202,8 @@ private:
     
     std::vector<ServerGame *> games;
     sf::TcpListener listener;
+    
+    int32_t currentGameID = 0;
     
     constexpr static size_t MAX_PACKET = 1048*100; // arbitray value - 100 kB
     unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
