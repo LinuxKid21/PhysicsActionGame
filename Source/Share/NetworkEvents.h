@@ -7,6 +7,8 @@ enum NetworkEvent : int32_t {
     RECTANGLE_DELETE,
     RECTANGLE_UPDATE,
     
+    START_GAME, // YAY!
+    
     // clients to server events
     CREATE_RECTANGLE,
     
@@ -15,5 +17,7 @@ enum NetworkEvent : int32_t {
     CREATE_GAME,
     JOIN_GAME,
     EXIT_GAME,
-    UNREGISTER_PLAYER
+    UNREGISTER_PLAYER,
+    
+    READY_GAME, // both players must tell server they are ready before game launches
 };

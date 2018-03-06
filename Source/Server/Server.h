@@ -13,6 +13,70 @@
 
 #include "ServerGame.h"
 
+class ServerLobby {
+public:
+    ServerLobby(int32_t gameID) : gameID(gameID) {
+        ;
+    }
+    
+    void start() {
+        bool ready1 = false;
+        bool ready2 = false;
+        while(!ready1 || !ready2) {
+            run(*socketP1, ready1);
+            if(socketP2)
+                run(*socketP2, ready2);
+        }
+        
+        
+        NetworkEvent e = START_GAME;
+        socketP1->send((char *)&e, sizeof(e));
+        socketP2->send((char *)&e, sizeof(e));
+        
+        ServerGame game(gameID);
+        game.socket = socketP1;
+        game.socketP2 = socketP2;
+        game.start();
+    }
+    
+    void run(sf::TcpSocket &socket, bool &ready) {
+        constexpr static size_t MAX_PACKET = 1024;
+        unsigned char networkData[MAX_PACKET]; // 1Kb
+        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
+        std::size_t received;
+        
+        socket.setBlocking(false);
+        sf::Socket::Status status;
+        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
+            leftOver += received;
+        }
+        socket.setBlocking(true);
+
+        received += leftOver; // make it the total received
+        if (status == sf::Socket::Done)
+        {
+            Serial serial(networkData, MAX_PACKET);
+            while(received > 0) {
+                NetworkEvent event;
+                serial.deserialize(event);
+                if(event == READY_GAME) {
+                    ready = true;
+                    received -= 4;
+                } else {
+                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
+                    received = 0;
+                }
+            }
+        }
+    }
+    
+    sf::TcpSocket *socketP1 = nullptr;
+    sf::TcpSocket *socketP2 = nullptr;
+    
+    int32_t getGameID() const {return gameID;}
+private:
+    int32_t gameID;
+};
 
 class Server {
 public:
@@ -71,9 +135,13 @@ private:
                 if(event == CREATE_GAME) {
                     socket.send((char *)&currentGameID, 4);
                     
-                    games.push_back(new ServerGame(currentGameID));
-                    games.back()->socket = &socket;
-                    std::thread t(&ServerGame::start, std::ref(*games.back()));
+                    //games.push_back(new ServerGame(currentGameID));
+                    //games.back()->socket = &socket;
+                    //std::thread t(&ServerGame::start, std::ref(*games.back()));
+                    //t.detach();
+                    lobbies.push_back(new ServerLobby(currentGameID));
+                    lobbies.back()->socketP1 = &socket;
+                    std::thread t(&ServerLobby::start, std::ref(*lobbies.back()));
                     t.detach();
                     currentGameID++;
                     
@@ -81,18 +149,31 @@ private:
                     
                     received -= 4;
                 } else if(event == LIST_GAMES) {
-                    uint32_t gameCount = games.size();
+                    uint32_t gameCount = lobbies.size();
                     socket.send((char *)&gameCount, 4);
-                    for(auto g : games) {
-                        int32_t id = g->getGameID();
+                    for(auto l : lobbies) {
+                        int32_t id = l->getGameID();
                         socket.send((char *)&id, 4);
                     }
+                    // uint32_t gameCount = games.size();
+                    // socket.send((char *)&gameCount, 4);
+                    // for(auto g : games) {
+                    //     int32_t id = g->getGameID();
+                    //     socket.send((char *)&id, 4);
+                    // }
                 } else if(event == JOIN_GAME) {
                     int32_t id;
                     serial.deserialize(id);
-                    for(auto g : games) {
+                    /*for(auto g : games) {
                         if(g->getGameID() == id) {
                             g->socketP2 = &socket;
+                            transferSocket = true;
+                            break;
+                        }
+                    }*/
+                    for(auto l : lobbies) {
+                        if(l->getGameID() == id) {
+                            l->socketP2 = &socket;
                             transferSocket = true;
                             break;
                         }
@@ -116,6 +197,9 @@ private:
     std::vector<sf::TcpSocket *> sockets;
     
     std::vector<ServerGame *> games;
+    
+    std::vector<ServerLobby *> lobbies;
+    
     sf::TcpListener listener;
     
     int32_t currentGameID = 0;
