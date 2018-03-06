@@ -1,6 +1,7 @@
 #include "Serial.h"
 #include <cassert>
 #include <cstring>
+#include <string>
 #include <cstdint>
 
 Serial::Serial(unsigned char *data, size_t len) : length(len), offset(0), data(data) {}
@@ -15,6 +16,19 @@ void Serial::serialize(const T &v) {
 }
 
 
+template <>
+void Serial::serialize(const std::string &v) {
+    int32_t s = v.size();
+    serialize(s);
+    
+    assert(offset+s <= length);
+    
+    memcpy(data+offset, v.data(), s);
+
+    offset += s;
+}
+
+
 template <typename T>
 void Serial::deserialize(T &v) {
     assert(offset+sizeof(v) <= length);
@@ -22,6 +36,17 @@ void Serial::deserialize(T &v) {
     memcpy((char *)&v, data+offset, sizeof(v));
 
     offset += sizeof(v);
+}
+
+template <>
+void Serial::deserialize(std::string &v) {
+    int32_t s;
+    deserialize(s);
+    
+    assert(offset+s <= length);
+    v = std::string(reinterpret_cast<char *>(data+offset), s);
+
+    offset += s;
 }
 
 

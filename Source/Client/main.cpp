@@ -12,14 +12,21 @@
 class MainMenu {
 public:
     MainMenu(sf::TcpSocket &socket) : socket(socket) {
-        while(!loop());
+        firstMenu();
     }
 private:
-    bool loop() {
+    enum SCREENS {
+        FIRST_SCREEN,
+        LOBBY_SCREEN,
+        DONE,
+    };
+    
+    void firstMenu() {
         std::cerr << "enter command: ";
         std::string command;
         std::cin >> command;
         
+        SCREENS dest = FIRST_SCREEN;
         if(command == "create") {
             NetworkEvent e = CREATE_GAME;
             socket.send((char *)&e, sizeof(e));
@@ -29,6 +36,7 @@ private:
             socket.receive((char *)&gameID, sizeof(gameID), received);
             
             std::cerr << "joined game #" << gameID << "!\n";
+            dest = LOBBY_SCREEN;
         } else if(command == "list") {
             NetworkEvent e = LIST_GAMES;
             socket.send((char *)&e, sizeof(e));
@@ -63,7 +71,27 @@ private:
                 std::cerr << "game joined\n";
             }
             
-        } else if(command == "ready") {
+            dest = LOBBY_SCREEN;
+        } else {
+            std::cout << "UNKOWN COMMAND!\n";
+        }
+        
+        if(dest == FIRST_SCREEN) {
+            firstMenu();
+        } else if(dest == LOBBY_SCREEN) {
+            std::cerr << "\n\nenter \"ready\" (without quotes) or type anything else to chat\n";
+            std::cerr << "enter a blank line to get incoming chat\n";
+            lobbyScreen();
+        }
+    }
+    
+    
+    void lobbyScreen() {
+        std::string command;
+        std::getline(std::cin, command);
+        
+        bool ready = false;
+        if(command == "ready") {
             NetworkEvent e = READY_GAME;
             socket.send((char *)&e, sizeof(e));
             
@@ -73,12 +101,61 @@ private:
             if(e != START_GAME) {
                 std::cerr << "server sent unexpected message! (expected start message)\n";
             }
-            return true;
-            
+            ready = true;
+        } else if(command == "") {
+            /* do nothing! */
+            /* will reach the end and let incoming chat in though */
         } else {
-            std::cout << "UNKOWN COMMAND!\n";
+            unsigned char data[1024]; // 1Kb message limit
+            Serial serial(data, 1024);
+            if(command.size() >= 1024) {
+                // leave room for null terminator and message type
+                command.erase(command.begin()+1018, command.end());
+            }
+            serial.serialize(CHAT_LOBBY);
+            serial.serialize(command);
+            socket.send(data, serial.getOffset());
         }
-        return false;
+        
+        
+        
+        constexpr static size_t MAX_PACKET = 1024;
+        unsigned char networkData[MAX_PACKET]; // 1Kb
+        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
+        std::size_t received;
+        
+        socket.setBlocking(false);
+        sf::Socket::Status status;
+        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
+            leftOver += received;
+        }
+        socket.setBlocking(true);
+
+        received += leftOver; // make it the total received
+        if (status == sf::Socket::Done)
+        {
+            Serial serial(networkData, MAX_PACKET);
+            while(received > 0) {
+                NetworkEvent event;
+                serial.deserialize(event);
+                if(event == CHAT_LOBBY) {
+                    std::string str;
+                    serial.deserialize(str);
+                    
+                    std::cerr << str << "\n";
+
+                    received -= 8 + str.size();
+                } else {
+                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
+                    received = 0;
+                }
+            }
+        }
+        
+        
+        
+        
+        if(!ready) lobbyScreen();
     }
     
     sf::TcpSocket &socket;

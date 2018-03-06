@@ -23,9 +23,9 @@ public:
         bool ready1 = false;
         bool ready2 = false;
         while(!ready1 || !ready2) {
-            run(*socketP1, ready1);
+            run(*socketP1, socketP2, ready1);
             if(socketP2)
-                run(*socketP2, ready2);
+                run(*socketP2, socketP1, ready2);
         }
         
         
@@ -39,7 +39,7 @@ public:
         game.start();
     }
     
-    void run(sf::TcpSocket &socket, bool &ready) {
+    void run(sf::TcpSocket &socket, sf::TcpSocket *otherSocket, bool &ready) {
         constexpr static size_t MAX_PACKET = 1024;
         unsigned char networkData[MAX_PACKET]; // 1Kb
         size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
@@ -62,6 +62,17 @@ public:
                 if(event == READY_GAME) {
                     ready = true;
                     received -= 4;
+                } else if(event == CHAT_LOBBY) {
+                    std::string str;
+                    auto preOffset = serial.getOffset() - 4;
+                    serial.deserialize(str);
+                    
+                    if(otherSocket != nullptr) {
+                        // echo to the other player
+                        otherSocket->send(networkData+preOffset, serial.getOffset()-preOffset+1);
+                    }
+                    
+                    received -= 8 + str.size();
                 } else {
                     std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
                     received = 0;
