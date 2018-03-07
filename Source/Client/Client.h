@@ -51,13 +51,11 @@ private:
         ReadStream stream(socket);
         while(!stream.isDone()) {
             NetworkEvent event;
-            std::cout << "PREFORE\n";
             
             if(!stream.deserialize(event))
                 break;
                 
             if(event == RECTANGLE_UPDATE) {
-                std::cout << "BEFORE\n";
                 int32_t id;
                 sf::Vector2f pos;
                 sf::Vector2f size;
@@ -69,7 +67,6 @@ private:
                 stream.deserialize(size.y);
                 stream.deserialize(rotation);
                 
-                std::cout << "AFTER\n";
                 // search for the index
                 int idx = -1;
                 for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
@@ -89,7 +86,6 @@ private:
                 std::cout << "unkown type: " << event << "\n";
             }
         }
-        std::cout << "END OF ONE LOOP ---------------------\n";
         /*
         size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
         std::size_t received;
@@ -154,7 +150,7 @@ private:
         float x = event.mouseButton.x/1920.f*19.2;
         float y = event.mouseButton.y/1080.f*10.8;
         
-        for(int i = 0;i < 3; i++)
+        for(int i = 0;i < 25; i++)
         if(event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
             constexpr size_t size = 4 /*event*/ + 2*4 /* 2 floats */; 
             unsigned char data[size];

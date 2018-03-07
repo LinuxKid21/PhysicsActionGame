@@ -87,39 +87,41 @@ template void Serial::deserialize<float>(float &);
 
 
 ReadStream::ReadStream(sf::TcpSocket &socket) :
-    socket(socket), serial(networkData, MAX_PACKET) {}
+    socket(socket), serial(networkData, MAX_PACKET) {for(int i=0;i<MAX_PACKET;i++)networkData[i]=0;}
 
 template <typename T>
 bool ReadStream::deserialize(T &v) {
-    assert(!isDone());
+    if(isDone()) return false;
     
     // get more data if necessary
     if(!hasReadAll) {
         size_t startingPoint = 0; // place to read into networkData
         if(readOnce) {
+            // don't waste precious cpu time for anything less than MAX_PACKET/2
+            if(serial.getOffset() < MAX_PACKET/2) {
+                serial.deserialize(v);
+                return true;
+            }
+            
             // work next packet amount into this one by doing a lot of shifting
             size_t amount = serial.getOffset();
             startingPoint = MAX_PACKET - amount;
             
             std::rotate(networkData, networkData+amount, networkData+MAX_PACKET);
+            amountInBuffer = MAX_PACKET-amount;
             
             serial.resetOffset();
-            
-            std::cout << "!!!!!!!!!!!!!!-----------------------------------\n";
         }
         
         // read in as much as necessary/possible
         sf::Socket::Status status;
         while((status = socket.receive(networkData+startingPoint, MAX_PACKET-startingPoint, received)) == sf::Socket::Partial) {
             startingPoint += received;
-            std::cout << "::::::  ->>>> " << received << "\n";
         }
         
         if(status == sf::Socket::NotReady) return false;
         
         readOnce = true;
-        
-        std::cout << ":::::: <2>  ->>>> " << received << "\n";
         
         // determine how full the buffer is
         received += startingPoint;
@@ -127,7 +129,6 @@ bool ReadStream::deserialize(T &v) {
         assert(status == sf::Socket::Done);
         
         if(received < MAX_PACKET) {
-            std::cout << "ALL PACKETS READ!   ->    " << static_cast<int>(received) - static_cast<int>(MAX_PACKET) << "\n";
             hasReadAll = true;
         }
         
