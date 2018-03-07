@@ -86,57 +86,6 @@ private:
                 std::cout << "unkown type: " << event << "\n";
             }
         }
-        /*
-        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
-        std::size_t received;
-        
-        sf::Socket::Status status;
-        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
-            leftOver += received;
-        }
-
-        received += leftOver; // make it the total received
-        if (status == sf::Socket::Done)
-        {
-            Serial serial(networkData, MAX_PACKET);
-            while(received > 0) {
-                NetworkEvent event;
-                serial.deserialize(event);
-                if(event == RECTANGLE_UPDATE) {
-                    
-                    int32_t id;
-                    sf::Vector2f pos;
-                    sf::Vector2f size;
-                    float rotation;
-                    serial.deserialize(id);
-                    serial.deserialize(pos.x);
-                    serial.deserialize(pos.y);
-                    serial.deserialize(size.x);
-                    serial.deserialize(size.y);
-                    serial.deserialize(rotation);
-                    
-                    // search for the index
-                    int idx = -1;
-                    for(unsigned int i = 0;i < rectangleEntities.size(); i++) {
-                        if(rectangleEntities[i].id == id) {
-                            idx = static_cast<unsigned int>(i);
-                            break;
-                        }
-                    }
-                    
-                    // if it doesn't exist, create it! Otherwise update it
-                    if(idx == -1) {
-                        rectangleEntities.emplace_back(pos, size, rotation, id);
-                    } else {
-                        rectangleEntities[idx].update(pos, size, rotation);
-                    }
-                    received -= 28;
-                } else {
-                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
-                    received = 0;
-                }
-            }
-        }*/
     }
 
     void draw() {

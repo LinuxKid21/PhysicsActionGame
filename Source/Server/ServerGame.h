@@ -60,36 +60,26 @@ private:
     }
     
     void handleInput(sf::TcpSocket &socket) {
-        socket.setBlocking(false);
-        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
-        std::size_t received;
         
-        sf::Socket::Status status;
-        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
-            leftOver += received;
-        }
-
-        received += leftOver; // make it the total received
-        if (status == sf::Socket::Done)
-        {
-            Serial serial(networkData, MAX_PACKET);
-            while(received > 0) {
-                NetworkEvent event;
-                serial.deserialize(event);
-                if(event == CREATE_RECTANGLE) {
-                    float x;
-                    float y;
-                    serial.deserialize(x);
-                    serial.deserialize(y);
-                    
-                    rectangleEntities.push_back(PhysicsRectangle(world, false,
-                        sf::Vector2f(x,y), sf::Vector2f(.1, .1), 0, currentRectID));
-                    
-                    received -= 12;
-                } else {
-                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
-                    received = 0;
-                }
+        socket.setBlocking(false);
+        ReadStream stream(socket);
+        while(!stream.isDone()) {
+            NetworkEvent event;
+            
+            if(!stream.deserialize(event))
+                break;
+                
+            if(event == CREATE_RECTANGLE) {
+                float x;
+                float y;
+                stream.deserialize(x);
+                stream.deserialize(y);
+                
+                rectangleEntities.push_back(PhysicsRectangle(world, false,
+                    sf::Vector2f(x,y), sf::Vector2f(.1, .1), 0, currentRectID));
+                
+            } else {
+                std::cout << "unkown type: " << event << "\n";
             }
         }
     }

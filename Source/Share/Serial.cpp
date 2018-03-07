@@ -87,7 +87,7 @@ template void Serial::deserialize<float>(float &);
 
 
 ReadStream::ReadStream(sf::TcpSocket &socket) :
-    socket(socket), serial(networkData, MAX_PACKET) {for(int i=0;i<MAX_PACKET;i++)networkData[i]=0;}
+    socket(socket), serial(networkData, MAX_PACKET) {}
 
 template <typename T>
 bool ReadStream::deserialize(T &v) {
@@ -120,6 +120,7 @@ bool ReadStream::deserialize(T &v) {
         }
         
         if(status == sf::Socket::NotReady) return false;
+        if(status == sf::Socket::Disconnected) return false;
         
         readOnce = true;
         
@@ -163,5 +164,6 @@ template bool ReadStream::deserialize<uint16_t>(uint16_t &);
 template bool ReadStream::deserialize<uint32_t>(uint32_t &);
 
 template bool ReadStream::deserialize<float>(float &);
+template bool ReadStream::deserialize<std::string>(std::string &);
 
 

@@ -119,39 +119,23 @@ private:
         
         
         
-        constexpr static size_t MAX_PACKET = 1024;
-        unsigned char networkData[MAX_PACKET]; // 1Kb
-        size_t leftOver = 0; // leftOver is how much from the last packet that applies to a new one (already filled)
-        std::size_t received;
-        
         socket.setBlocking(false);
-        sf::Socket::Status status;
-        while((status = socket.receive(networkData+leftOver, MAX_PACKET-leftOver, received)) == sf::Socket::Partial) {
-            leftOver += received;
-        }
-        socket.setBlocking(true);
-
-        received += leftOver; // make it the total received
-        if (status == sf::Socket::Done)
-        {
-            Serial serial(networkData, MAX_PACKET);
-            while(received > 0) {
-                NetworkEvent event;
-                serial.deserialize(event);
-                if(event == CHAT_LOBBY) {
-                    std::string str;
-                    serial.deserialize(str);
-                    
-                    std::cerr << str << "\n";
-
-                    received -= 8 + str.size();
-                } else {
-                    std::cout << "unkown type: " << event << " with recieved: " << received << " with offset: " << serial.getOffset() << "\n";
-                    received = 0;
-                }
+        ReadStream stream(socket);
+        while(!stream.isDone()) {
+            NetworkEvent event;
+            
+            if(!stream.deserialize(event))
+                break;
+            if(event == CHAT_LOBBY) {
+                std::string str;
+                stream.deserialize(str);
+                
+                std::cerr << str << "\n";
+            } else {
+                std::cout << "unkown type: " << event << "\n";
             }
         }
-        
+        socket.setBlocking(true);
         
         
         
