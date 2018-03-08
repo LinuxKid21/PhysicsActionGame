@@ -53,6 +53,8 @@ PhysicsRectangle::PhysicsRectangle(b2World &physicsWorld, bool fixed,
     physicsBody->CreateFixture(&fixtureDef);
     _id++;
 }
+
+// sends over the rectangles attributes over the network
 void PhysicsRectangle::update(sf::TcpSocket &socket) {
     if(firstUpdate) {
         firstUpdate = false;

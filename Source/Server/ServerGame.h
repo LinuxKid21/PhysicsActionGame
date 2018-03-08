@@ -11,15 +11,20 @@ public:
     
     void start() {
         onStart();
+        
+        // while a player is connected keep the simulation running
         while (socket || socketP2)
         {
             float delta = clock.restart().asSeconds();
             timeSinceUpdate += delta;
 
+            // update the simulation
             while(timeSinceUpdate >= timeStep) {
                 timeSinceUpdate -= timeStep;
                 world.Step(timeStep, velocityIterations, positionIterations);
             }
+            
+            // send the data over the network
             update();
         }
     }
@@ -29,6 +34,7 @@ public:
     
     int32_t getGameID() const {return gameID;}
 private:
+    // initialize the starting platforms
     void onStart() {
         // rectangleEntities.push_back(RectangleEntity(world, sf::Vector2f(1,0), sf::Vector2f(.5, 1.7), 45, false));
         rectangleEntities.push_back(PhysicsRectangle(world, true, sf::Vector2f(7.5,10), sf::Vector2f(15, 1), 0, currentRectID));
@@ -72,6 +78,7 @@ private:
         }
     }
     
+    // handle the network input
     bool handleInput(sf::TcpSocket &socket) {
         
         socket.setBlocking(false);
@@ -100,7 +107,8 @@ private:
         return false;
     }
 
-    //---------------------------------------------------------------------------------------------------- 
+    // construct a "table" (two legs and a top surface) that is centered at pos,
+    // fits exactle inside size and where each component is thickness thick
     void makePlatform(sf::Vector2f pos, sf::Vector2f size, float thickness) {
         float legHeight = size.y-thickness;
         rectangleEntities.push_back(PhysicsRectangle(world, false,
@@ -129,7 +137,4 @@ private:
     std::vector<PhysicsRectangle> rectangleEntities;
     int currentRectID = 0;
     int gameID;
-    
-    constexpr static size_t MAX_PACKET = 1024*1; // arbitray value - 1 kB
-    unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };

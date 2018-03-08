@@ -6,6 +6,7 @@ public:
     }
     
     void start() {
+        // while the players aren't ready, handle chat and accept the ready command
         bool ready1 = false;
         bool ready2 = false;
         while(!ready1 || !ready2) {
@@ -14,11 +15,12 @@ public:
                 run(*socketP2, socketP1, ready2);
         }
         
-        
+        // once they are ready then signal that from the server to the clients
         NetworkEvent e = START_GAME;
         socketP1->send((char *)&e, sizeof(e));
         socketP2->send((char *)&e, sizeof(e));
         
+        // start the game!
         ServerGame game(gameID);
         game.socket = socketP1;
         game.socketP2 = socketP2;

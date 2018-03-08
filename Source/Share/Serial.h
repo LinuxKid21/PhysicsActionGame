@@ -4,9 +4,17 @@
 #include "NetworkEvents.h"
 
 // only handles primatives!
+// somewhat low level class that allows easier serialization/deserialization
+// features over using memcpy:
+//   handles offset into the destination buffer automatically
+//   less boilerplate code. Compare:
+//   -> memcpy(dest+offset, (char *)&src, sizeof(src))
+//   -> serialize(src)
+//   This means fewer careless errors!
 class Serial {
 public:
     // used for error checking. never exceeded to avoid buffer overflow
+    // (crashes program if exceeded)
     Serial(unsigned char *data, size_t len);
     
     // don't mix these within one object! (serialize and deserialize)
@@ -24,7 +32,9 @@ private:
     unsigned char *data;
 };
 
-
+// abstraction over Serial for reading only.
+// automatically calls necessary read calls and handles memory for
+// all deserialization needs.
 class ReadStream {
 public:
     ReadStream(sf::TcpSocket &socket);

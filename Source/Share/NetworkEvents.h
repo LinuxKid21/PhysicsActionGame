@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 
+// all the events headers that are used to communicate between the client and server
 enum NetworkEvent : int32_t {
     NONE = -1,
     // server to client events

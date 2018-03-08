@@ -8,7 +8,7 @@
 #include <Box2D/Box2D.h>
 
 
-
+// handles the CLI main menu
 class MainMenu {
 public:
     MainMenu(sf::TcpSocket &socket) : socket(socket) {
@@ -180,6 +180,7 @@ int main(int argc, char *argv[])
         serverIP = argv[1];
     }
     
+    // connect, load the menu, then once that returns, play the game
     sf::TcpSocket socket;
     sf::Socket::Status status = socket.connect(serverIP, 54000);
     if (status != sf::Socket::Done)
