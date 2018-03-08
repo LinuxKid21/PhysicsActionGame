@@ -39,7 +39,6 @@ public:
     }
     
     ~Client() {
-        delete[] networkData;
     }
 
 private:
@@ -129,7 +128,4 @@ private:
     std::vector<NetworkRectangle> rectangleEntities;
     
     sf::TcpSocket &socket;
-    
-    constexpr static size_t MAX_PACKET = 1024*1024*10; // arbitray value - 10 MB
-    unsigned char *networkData = new unsigned char[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
