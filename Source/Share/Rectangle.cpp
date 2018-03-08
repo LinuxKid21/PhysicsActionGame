@@ -77,10 +77,7 @@ void PhysicsRectangle::update(sf::TcpSocket &socket) {
     serial.serialize(shape.getSize().y);
     serial.serialize(shape.getRotation());
     
-    if (socket.send(data, size) != sf::Socket::Done)
-    {
-        std::cerr << "unable to send data!\n";
-    }
+    socket.send(data, size);
 }
 
 

@@ -11,7 +11,7 @@ public:
     
     void start() {
         onStart();
-        while (true)
+        while (socket || socketP2)
         {
             float delta = clock.restart().asSeconds();
             timeSinceUpdate += delta;
@@ -19,8 +19,8 @@ public:
             while(timeSinceUpdate >= timeStep) {
                 timeSinceUpdate -= timeStep;
                 world.Step(timeStep, velocityIterations, positionIterations);
-                update();
             }
+            update();
         }
     }
     
@@ -49,17 +49,30 @@ private:
 
     void update() {
         for(auto &e : rectangleEntities) {
-            e.update(*socket);
+            if(socket)
+                e.update(*socket);
             if(socketP2)
                 e.update(*socketP2);
         }
         
-        handleInput(*socket);
+        bool p1_exited = false;
+        bool p2_exited = false;
+        if(socket)
+            p1_exited = handleInput(*socket);
         if(socketP2)
-            handleInput(*socketP2);
+            p2_exited = handleInput(*socketP2);
+            
+        if(p1_exited) {
+            delete socket;
+            socket = nullptr;
+        }
+        if(p2_exited) {
+            delete socketP2;
+            socketP2 = nullptr;
+        }
     }
     
-    void handleInput(sf::TcpSocket &socket) {
+    bool handleInput(sf::TcpSocket &socket) {
         
         socket.setBlocking(false);
         ReadStream stream(socket);
@@ -78,10 +91,13 @@ private:
                 rectangleEntities.push_back(PhysicsRectangle(world, false,
                     sf::Vector2f(x,y), sf::Vector2f(.1, .1), 0, currentRectID));
                 
+            } else if(event == EXIT_GAME) {
+                return true;
             } else {
                 std::cout << "unkown type: " << event << "\n";
             }
         }
+        return false;
     }
 
     //---------------------------------------------------------------------------------------------------- 

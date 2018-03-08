@@ -35,6 +35,9 @@ public:
             window.display();
         }
         
+        socket.setBlocking(true);
+        NetworkEvent e = EXIT_GAME;
+        socket.send((char *)&e, 4);
         socket.disconnect();
     }
     
