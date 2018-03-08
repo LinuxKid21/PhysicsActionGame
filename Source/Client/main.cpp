@@ -55,12 +55,15 @@ private:
                 std::cerr << "no games found\n";
             }
         } else if(command == "join") {
+            unsigned char data[8];
+            Serial serial(data, 8);
             NetworkEvent e = JOIN_GAME;
-            socket.send((char *)&e, sizeof(e));
+            serial.serialize(e);
             
             int32_t gameID;
             std::cin >> gameID;
-            socket.send((char *)&gameID, sizeof(gameID));
+            serial.serialize(gameID);
+            socket.send(data, 8);
             
             size_t received;
             int32_t returnedGameID;
