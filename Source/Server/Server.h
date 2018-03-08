@@ -76,6 +76,9 @@ public:
     sf::TcpSocket *socketP1 = nullptr;
     sf::TcpSocket *socketP2 = nullptr;
     
+    std::string nameP1;
+    std::string nameP2;
+    
     int32_t getGameID() const {return gameID;}
     
     bool lobbyFull = false;
@@ -111,19 +114,21 @@ private:
         } else {
             socket->setBlocking(false);
             sockets.push_back(socket);
+            playerNames.push_back("");
         }
     }
     
     void readConnectionData() {
         for(unsigned int i = 0;i < sockets.size(); i++) {
-            if(_readConnectionData(*sockets[i])) {
+            if(_readConnectionData(*sockets[i], playerNames[i])) {
                 sockets.erase(sockets.begin() + i);
+                playerNames.erase(playerNames.begin() + i);
                 i--;
             }
         }
     }
     
-    bool _readConnectionData(sf::TcpSocket &socket) {
+    bool _readConnectionData(sf::TcpSocket &socket, std::string &name) {
         
         bool transferSocket = false;
         socket.setBlocking(false);
@@ -134,13 +139,19 @@ private:
             if(!stream.deserialize(event))
                 break;
                 
-            if(event == CREATE_GAME) {
+            if(event == REGISTER_PLAYER) {
+                socket.setBlocking(true);
+                stream.deserialize(name);
+                
+                socket.setBlocking(false);
+            } else if(event == CREATE_GAME) {
                 socket.setBlocking(true);
                 socket.send((char *)&currentGameID, 4);
                 
                 
                 lobbies.push_back(new ServerLobby(currentGameID));
                 lobbies.back()->socketP1 = &socket;
+                lobbies.back()->nameP1 = name;
                 std::thread t(&ServerLobby::start, std::ref(*lobbies.back()));
                 t.detach();
                 currentGameID++;
@@ -154,8 +165,11 @@ private:
                 socket.send((char *)&gameCount, 4);
                 for(auto l : lobbies) {
                     if(!l->lobbyFull) {
-                        int32_t id = l->getGameID();
-                        socket.send((char *)&id, 4);
+                        unsigned char data[50];
+                        Serial serial(data, 50);
+                        serial.serialize(l->getGameID());
+                        serial.serialize(l->nameP1);
+                        socket.send(data, serial.getOffset());
                     }
                 }
                 
@@ -168,6 +182,7 @@ private:
                 for(auto l : lobbies) {
                     if(l->getGameID() == id && !l->lobbyFull) {
                         l->socketP2 = &socket;
+                        l->nameP2 = name;
                         transferSocket = true;
                         l->lobbyFull = true;
                         break;
@@ -189,6 +204,7 @@ private:
     }
     
     std::vector<sf::TcpSocket *> sockets;
+    std::vector<std::string> playerNames; // playerNames[i] is associated with sockets[i]
     
     std::vector<ServerLobby *> lobbies;
     

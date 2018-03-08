@@ -12,6 +12,21 @@
 class MainMenu {
 public:
     MainMenu(sf::TcpSocket &socket) : socket(socket) {
+        std::cerr << "enter name: ";
+        std::string name;
+        std::getline(std::cin, name);
+        
+        
+        unsigned char data[50];
+        Serial serial(data, 50);
+        if(name.size() >= 45) {
+            // leave room for null terminator and message type
+            name.erase(name.begin()+45, name.end());
+        }
+        serial.serialize(REGISTER_PLAYER);
+        serial.serialize(name);
+        socket.send(data, serial.getOffset());
+        
         firstMenu();
     }
 private:
@@ -46,9 +61,16 @@ private:
             socket.receive((char *)&gameCount, sizeof(gameCount), received);
             
             for(unsigned int i = 0;i < gameCount; i++) {
+                int32_t strLen;
                 int32_t gameID;
                 socket.receive((char *)&gameID, sizeof(gameID), received);
-                std::cerr << "Found game #" << gameID << "\n";
+                socket.receive((char *)&strLen, sizeof(strLen), received);
+                
+                char data[50];
+                socket.receive(data, strLen, received);
+                
+                std::string pName = std::string(data, strLen);
+                std::cerr << "Found game #" << gameID << " created by " << pName << "\n";
             }
             
             if(gameCount == 0) {
@@ -111,7 +133,7 @@ private:
         } else {
             unsigned char data[1024]; // 1Kb message limit
             Serial serial(data, 1024);
-            if(command.size() >= 1024) {
+            if(command.size() >= 1018) {
                 // leave room for null terminator and message type
                 command.erase(command.begin()+1018, command.end());
             }
