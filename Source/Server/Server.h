@@ -77,6 +77,8 @@ public:
     sf::TcpSocket *socketP2 = nullptr;
     
     int32_t getGameID() const {return gameID;}
+    
+    bool lobbyFull = false;
 private:
     int32_t gameID;
 };
@@ -151,8 +153,10 @@ private:
                 uint32_t gameCount = lobbies.size();
                 socket.send((char *)&gameCount, 4);
                 for(auto l : lobbies) {
-                    int32_t id = l->getGameID();
-                    socket.send((char *)&id, 4);
+                    if(!l->lobbyFull) {
+                        int32_t id = l->getGameID();
+                        socket.send((char *)&id, 4);
+                    }
                 }
                 
                 socket.setBlocking(false);
@@ -162,9 +166,10 @@ private:
                 stream.deserialize(id);
                 
                 for(auto l : lobbies) {
-                    if(l->getGameID() == id) {
+                    if(l->getGameID() == id && !l->lobbyFull) {
                         l->socketP2 = &socket;
                         transferSocket = true;
+                        l->lobbyFull = true;
                         break;
                     }
                 }
