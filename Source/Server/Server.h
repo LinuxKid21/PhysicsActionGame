@@ -17,7 +17,8 @@
 
 class Server {
 public:
-    //---------------------------------------------------------------------------------------------------- 
+    // the server object continually spins on waiting for new connections and
+    // handling existing connections which have not yet entered the lobby stage
     Server()
     {
         if (listener.listen(54000) != sf::Socket::Done)
@@ -29,9 +30,15 @@ public:
         while(true) {
             acceptNewConnections();
             readConnectionData();
+            
+            // naive because it does this even if there is a ton of traffic,
+            // but as it stands this is better than consuming 100% CPU usage
+            // in very small traffic conditions
+            sf::sleep(sf::seconds(0.1f));
         }
     }
 private:
+    // handles accepting new connections
     void acceptNewConnections() {
         sf::TcpSocket *socket = new sf::TcpSocket();
         sf::Socket::Status status = listener.accept(*socket);
@@ -47,8 +54,12 @@ private:
         }
     }
     
+    // handles reading in data from all connection sockets
     void readConnectionData() {
         for(unsigned int i = 0;i < sockets.size(); i++) {
+            // hand each socket to be processed.
+            // if it returns true that means the player has moved onto
+            // a lobby so the socket is no longer handled here
             if(_readConnectionData(*sockets[i], playerNames[i])) {
                 sockets.erase(sockets.begin() + i);
                 playerNames.erase(playerNames.begin() + i);
@@ -57,6 +68,7 @@ private:
         }
     }
     
+    // handle each socket connections
     bool _readConnectionData(sf::TcpSocket &socket, std::string &name) {
         
         bool transferSocket = false;
@@ -140,7 +152,4 @@ private:
     sf::TcpListener listener;
     
     int32_t currentGameID = 0;
-    
-    constexpr static size_t MAX_PACKET = 1024*1; // arbitray value - 1 kB
-    unsigned char networkData[MAX_PACKET]; // max network packet size is now 2048 bytes
 };
